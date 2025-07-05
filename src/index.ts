@@ -11,5 +11,4 @@ app.get('/', (_req, res) => {
   res.json({ message: 'Welcome to TrackWise API' });
 });
 
-
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

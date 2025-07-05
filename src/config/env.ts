@@ -10,4 +10,4 @@ if (!_env.success) {
     throw new Error("Invalid environment variables");
 }
 
-export const {PORT} = _env.data;
+export const { PORT } = _env.data;
