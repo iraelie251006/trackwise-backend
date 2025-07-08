@@ -9,12 +9,18 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id             String   @id @default(uuid())
   name           String
   email          String   @unique
   password       String   // hashed
-  refreshTokens  RefreshToken[] // relation
+  refreshTokens  RefreshToken[] // one-to-many relationship
+  role           Role     @default(USER)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
