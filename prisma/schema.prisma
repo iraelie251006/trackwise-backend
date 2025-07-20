@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -14,20 +14,30 @@ enum Role {
   ADMIN
 }
 
+enum AuthProvider {
+  CREDENTIALS
+  GOOGLE
+  GITHUB
+}
+
 model User {
-  id             String   @id @default(uuid())
-  name           String
-  email          String   @unique
-  password       String   // hashed
-  refreshTokens  RefreshToken[] // one-to-many relationship
-  role           Role     @default(USER)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String // hashed
+  provider      AuthProvider   @default(CREDENTIALS)
+  refreshTokens RefreshToken[] // one-to-many relationship
+  alert         Alert[]
+  image         String?
+  role          Role           @default(USER)
+  expenses      Expense[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
-  token     String   // hashed refresh token
+  token     String // hashed refresh token
   user      User     @relation(fields: [userId], references: [id])
   userId    String
   expiresAt DateTime
@@ -35,4 +45,39 @@ model RefreshToken {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  title       String
+  amount      Float
+  date        DateTime
+  category    Category
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  isRecurring Boolean  @default(false)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  threshold Float // e.g. 5000 RWF/month
+  triggered Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Category {
+  FOOD
+  TRANSPORT
+  UTILITIES
+  ENTERTAINMENT
+  HEALTH
+  EDUCATION
+  SAVINGS
+  OTHER
 }
