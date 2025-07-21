@@ -21,54 +21,57 @@ enum AuthProvider {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String // hashed
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String         @db.VarChar(100)
+  email         String         @unique @db.VarChar(255)
+  password      String // hashed password
   provider      AuthProvider   @default(CREDENTIALS)
   refreshTokens RefreshToken[] // one-to-many relationship
   alert         Alert[]
-  image         String?
+  image         String?        @db.VarChar(255)
   role          Role           @default(USER)
   expenses      Expense[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  timezone      String         @default("UTC")
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+
+  @@map("users") // Map to "users" table in the database
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   token     String // hashed refresh token
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   @@index([userId])
 }
 
 model Expense {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid()) @db.Uuid
   title       String
-  amount      Float
+  amount      Decimal  @db.Decimal(10, 2)
   date        DateTime
   category    Category
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isRecurring Boolean  @default(false)
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
 }
 
 model Alert {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(uuid()) @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   threshold Float // e.g. 5000 RWF/month
   triggered Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
 enum Category {
