@@ -10,4 +10,10 @@ if (!_env.success) {
   throw new Error("Invalid environment variables");
 }
 
-export const { PORT } = _env.data;
+export const {
+  PORT,
+  ACCESS_TOKEN_SECRET,
+  REFRESH_TOKEN_SECRET,
+  ACCESS_TOKEN_EXPIRES,
+  REFRESH_TOKEN_EXPIRES,
+} = _env.data;
