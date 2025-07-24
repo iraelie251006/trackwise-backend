@@ -25,43 +25,46 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
       } satisfies ActionResponse);
     }
 
-    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const existingUser = await prisma.user.findUnique({
-        where: {
-          email,
-        },
-      });
-      if (existingUser) {
-        return res
-          .status(400)
-          .json({
+    const result = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const existingUser = await prisma.user.findUnique({
+          where: {
+            email,
+          },
+        });
+        if (existingUser) {
+          return res.status(400).json({
             success: false,
             error: { message: "User already exists with this email." },
           } satisfies ActionResponse);
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = await tx.user.create({
+          data: { name, email, password: hashedPassword },
+        });
+
+        const accessToken = jwt.sign(
+          { userId: newUser.id },
+          ACCESS_TOKEN_SECRET,
+          { expiresIn: ACCESS_TOKEN_EXPIRES }
+        );
+
+        return { accessToken, newUser };
       }
+    );
 
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const newUser = await tx.user.create({
-        data: { name, email, password: hashedPassword },
-      });
-
-      const accessToken = jwt.sign(
-        { userId: newUser.id },
-        ACCESS_TOKEN_SECRET,
-        { expiresIn: ACCESS_TOKEN_EXPIRES }
-      );
-
-      return accessToken
-    });
-
-    const {accessToken} = result;
+    const { accessToken, newUser } = result;
     return res.status(201).json({
       success: true,
-      data: {
-        accessToken: accessToken,
-      },
+      data: JSON.parse(
+        JSON.stringify({
+          accessToken: accessToken,
+          user: newUser,
+        })
+      ),
     } satisfies ActionResponse);
   } catch (error) {
     next(error);
