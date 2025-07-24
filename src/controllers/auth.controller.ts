@@ -14,13 +14,13 @@ export const SignIn = async ({ req, res, next }: ReqResNextObject) => {
 
 export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, username, email, password } = req.body;
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !username) {
       return res.status(400).json({
         success: false,
         error: {
-          message: "Name, email and password are required.",
+          message: "Name, username, email and password are required.",
         },
       } satisfies ActionResponse);
     }
@@ -36,6 +36,19 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
           return res.status(400).json({
             success: false,
             error: { message: "User already exists with this email." },
+          } satisfies ActionResponse);
+        }
+
+        const existingUsername = await prisma.user.findUnique({
+          where: {
+            username,
+          },
+        });
+
+        if (existingUsername) {
+          return res.status(400).json({
+            success: false,
+            error: { message: "Username already exists." },
           } satisfies ActionResponse);
         }
 
