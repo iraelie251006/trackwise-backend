@@ -7,6 +7,52 @@ import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
 
 export const SignIn = async ({ req, res, next }: ReqResNextObject) => {
   try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Email and password are required." },
+      } satisfies ActionResponse);
+    }
+
+    const result = await prisma.$transaction(async () => {
+      const user = await prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "User not found. please SignUp." },
+        } satisfies ActionResponse);
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          error: { message: "Incorrect Password." },
+        } satisfies ActionResponse);
+      }
+
+      const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, {
+        expiresIn: ACCESS_TOKEN_EXPIRES,
+      });
+
+      return {
+        accessToken,
+        user,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: JSON.parse(JSON.stringify(result)),
+    });
   } catch (error) {
     next(error);
   }
@@ -65,19 +111,13 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
           { expiresIn: ACCESS_TOKEN_EXPIRES }
         );
 
-        return { accessToken, newUser };
+        return { accessToken, user: newUser };
       }
     );
 
-    const { accessToken, newUser } = result;
     return res.status(201).json({
       success: true,
-      data: JSON.parse(
-        JSON.stringify({
-          accessToken: accessToken,
-          user: newUser,
-        })
-      ),
+      data: JSON.parse(JSON.stringify(result)),
     } satisfies ActionResponse);
   } catch (error) {
     next(error);
