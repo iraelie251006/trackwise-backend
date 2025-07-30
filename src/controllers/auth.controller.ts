@@ -1,89 +1,120 @@
 import { Prisma } from "@prisma/client";
-import { ActionResponse, ReqResNextObject } from "../types/global";
+import { ReqResNextObject } from "../types/global";
 import { prisma } from "../utils/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
+import { NextFunction, Request, Response } from "express";
 
-export const SignIn = async ({ req, res, next }: ReqResNextObject) => {
+export const SignIn = async ({
+  req,
+  res,
+  next,
+}: ReqResNextObject): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: "Email and password are required." },
-      } satisfies ActionResponse);
+      });
+      return;
     }
 
-    const result = await prisma.$transaction(async () => {
-      const user = await prisma.user.findUnique({
-        where: {
-          email,
-        },
-      });
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: { message: "User not found. please SignUp." },
-        } satisfies ActionResponse);
-      }
-
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          error: { message: "Incorrect Password." },
-        } satisfies ActionResponse);
-      }
-
-      const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, {
-        expiresIn: ACCESS_TOKEN_EXPIRES,
-      });
-
-      return {
-        accessToken,
-        user,
-      };
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: JSON.parse(JSON.stringify(result)),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
-  try {
-    const { name, username, email, password } = req.body;
-
-    if (!email || !password || !name || !username) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          message: "Name, username, email and password are required.",
-        },
-      } satisfies ActionResponse);
-    }
-
-    const result = await prisma.$transaction(
+    const { accessToken, user } = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        const existingUser = await prisma.user.findUnique({
+        const user = await tx.user.findUnique({
           where: {
             email,
           },
         });
-        if (existingUser) {
-          return res.status(400).json({
-            success: false,
-            error: { message: "User already exists with this email." },
-          } satisfies ActionResponse);
+
+        if (!user) throw new Error("USER_NOT_FOUND");
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) throw new Error("INVALID_PASSWORD");
+
+        if (
+          !process.env.ACCESS_TOKEN_SECRET ||
+          !process.env.REFRESH_TOKEN_SECRET
+        ) {
+          throw new Error(
+            "JWT secrets are missing in the environment variables."
+          );
         }
+
+        if (
+          !process.env.ACCESS_TOKEN_EXPIRES ||
+          !process.env.REFRESH_TOKEN_EXPIRES
+        ) {
+          throw new Error(
+            "JWT expiration values are missing in the environment variables."
+          );
+        }
+
+        const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, {
+          expiresIn: ACCESS_TOKEN_EXPIRES,
+        });
+
+        return {
+          accessToken,
+          user,
+        };
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "User signed in successfully.",
+      data: { accessToken, user },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "USER_NOT_FOUND") {
+      res.status(404).json({
+        success: false,
+        error: { message: "User not found. please SignUp." },
+      });
+      return;
+    }
+    if (error instanceof Error && error.message === "INVALID_PASSWORD") {
+      res.status(401).json({
+        success: false,
+        error: { message: "Incorrect Password." },
+      });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const SignUp = async ({
+  req,
+  res,
+  next,
+}: ReqResNextObject): Promise<void> => {
+  try {
+    const { name, username, email, password } = req.body;
+
+    if (!email || !password || !name || !username) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "Name, username, email and password are required.",
+        },
+      });
+      return;
+    }
+
+    const { accessToken, user } = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const existingUser = await tx.user.findUnique({
+          where: {
+            email,
+          },
+        });
+        if (existingUser) throw new Error("USER_ALREADY_EXISTS");
 
         const existingUsername = await prisma.user.findUnique({
           where: {
@@ -91,12 +122,7 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
           },
         });
 
-        if (existingUsername) {
-          return res.status(400).json({
-            success: false,
-            error: { message: "Username already exists." },
-          } satisfies ActionResponse);
-        }
+        if (existingUsername) throw new Error("USERNAME_ALREADY_EXISTS");
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -104,6 +130,24 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
         const newUser = await tx.user.create({
           data: { name, email, password: hashedPassword },
         });
+
+        if (
+          !process.env.ACCESS_TOKEN_SECRET ||
+          !process.env.REFRESH_TOKEN_SECRET
+        ) {
+          throw new Error(
+            "JWT secrets are missing in the environment variables."
+          );
+        }
+
+        if (
+          !process.env.ACCESS_TOKEN_EXPIRES ||
+          !process.env.REFRESH_TOKEN_EXPIRES
+        ) {
+          throw new Error(
+            "JWT expiration values are missing in the environment variables."
+          );
+        }
 
         const accessToken = jwt.sign(
           { userId: newUser.id },
@@ -115,11 +159,19 @@ export const SignUp = async ({ req, res, next }: ReqResNextObject) => {
       }
     );
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      data: JSON.parse(JSON.stringify(result)),
-    } satisfies ActionResponse);
+      message: "User signed up successfully.",
+      data: { accessToken, user },
+    });
   } catch (error) {
+    if (error instanceof Error && error.message === "USERNAME_ALREADY_EXISTS") {
+      res.status(400).json({
+        success: false,
+        error: { message: "Username already exists." },
+      });
+      return;
+    }
     next(error);
   }
 };

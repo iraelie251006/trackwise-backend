@@ -1,12 +1,27 @@
 import { z } from "zod";
 
-
 export const envSchema = z.object({
   PORT: z.string().default("5000").transform(Number),
-  ACCESS_TOKEN_SECRET: z.string().min(1, {message: "ACCESS_TOKEN_SECRET is required"}), 
-  REFRESH_TOKEN_SECRET: z.string().min(1, {message: "REFRESH_TOKEN_SECRET is required"}),
-  ACCESS_TOKEN_EXPIRES: z.number().default(30),
-  REFRESH_TOKEN_EXPIRES: z.number().default(30),
+  ACCESS_TOKEN_SECRET: z
+    .string()
+    .min(1, { message: "ACCESS_TOKEN_SECRET is required" }),
+  REFRESH_TOKEN_SECRET: z
+    .string()
+    .min(1, { message: "REFRESH_TOKEN_SECRET is required" }),
+  ACCESS_TOKEN_EXPIRES: z.string().transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) {
+      throw new Error("ACCESS_TOKEN_EXPIRES must be a number");
+    }
+    return parsed;
+  }),
+  REFRESH_TOKEN_EXPIRES: z.string().transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) {
+      throw new Error("REFRESH_TOKEN_EXPIRES must be a number");
+    }
+    return parsed;
+  }),
 });
 
 export const SignUpSchema = z.object({
