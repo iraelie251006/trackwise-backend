@@ -43,7 +43,7 @@ model RefreshToken {
   id        String   @id @default(uuid()) @db.Uuid
   token     String // hashed refresh token
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+  userId    String   @db.Uuid
   expiresAt DateTime
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
@@ -57,7 +57,7 @@ model Expense {
   amount      Decimal  @db.Decimal(10, 2)
   date        DateTime
   category    Category
-  userId      String
+  userId      String @db.Uuid
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isRecurring Boolean  @default(false)
   notes       String?
@@ -68,7 +68,7 @@ model Expense {
 model Alert {
   id        String   @id @default(uuid()) @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+  userId    String @db.Uuid
   threshold Float // e.g. 5000 RWF/month
   triggered Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
