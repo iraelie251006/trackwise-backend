@@ -1,10 +1,10 @@
-import { Prisma } from "@prisma/client";
 import { ReqResNextObject } from "../types/global";
 import { prisma } from "../utils/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
-import { NextFunction, Request, Response } from "express";
+import { Prisma } from "../generated/prisma";
+
 
 export const SignIn = async ({
   req,
@@ -128,7 +128,7 @@ export const SignUp = async ({
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = await tx.user.create({
-          data: { name, email, password: hashedPassword },
+          data: { name, email, username, password: hashedPassword },
         });
 
         if (
