@@ -5,6 +5,13 @@ import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 
+interface UserPass {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+}
+
 export const SignIn = async (
   req: Request,
   res: Response,
@@ -13,10 +20,18 @@ export const SignIn = async (
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (!email) {
       res.status(400).json({
         success: false,
-        error: { message: "Email and password are required." },
+        error: { message: "Email is required." },
+      });
+      return;
+    }
+
+    if (!password) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Password is required." },
       });
       return;
     }
@@ -95,12 +110,21 @@ export const SignUp = async (
 ): Promise<void> => {
   try {
     const { name, username, email, password } = req.body;
+    const requiredFields: Record<string, string> = {
+      email,
+      password,
+      name,
+      username,
+    };
+    const missingFields = Object.keys(requiredFields).filter(
+      (key) => !requiredFields[key]
+    );
 
-    if (!email || !password || !name || !username) {
+    if (missingFields.length > 0) {
       res.status(400).json({
         success: false,
         error: {
-          message: "Name, username, email and password are required.",
+          message: `${missingFields.length === 1 ? `${missingFields} is required` : `${missingFields.join(", ")} are required`}.`,
         },
       });
       return;
