@@ -1,16 +1,15 @@
-import { ReqResNextObject } from "../types/global";
 import { prisma } from "../utils/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
 import { Prisma } from "../generated/prisma";
+import { NextFunction, Request, Response } from "express";
 
-
-export const SignIn = async ({
-  req,
-  res,
-  next,
-}: ReqResNextObject): Promise<void> => {
+export const SignIn = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -89,11 +88,11 @@ export const SignIn = async ({
   }
 };
 
-export const SignUp = async ({
-  req,
-  res,
-  next,
-}: ReqResNextObject): Promise<void> => {
+export const SignUp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { name, username, email, password } = req.body;
 
@@ -116,7 +115,7 @@ export const SignUp = async ({
         });
         if (existingUser) throw new Error("USER_ALREADY_EXISTS");
 
-        const existingUsername = await prisma.user.findUnique({
+        const existingUsername = await tx.user.findUnique({
           where: {
             username,
           },
