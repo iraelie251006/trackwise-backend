@@ -5,12 +5,6 @@ import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 
-interface UserPass {
-  name: string;
-  email: string;
-  username: string;
-  password: string;
-}
 
 export const SignIn = async (
   req: Request,
