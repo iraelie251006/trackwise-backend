@@ -251,3 +251,40 @@ export const SignUp = async (
     next(error);
   }
 };
+
+export const SignOut = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      res.status(200).json({
+        success: true,
+        message: { message: "User signed out successfully." },
+      });
+      return;
+    }
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+    await prisma.refreshToken
+      .delete({
+        where: {
+          token: refreshToken,
+        },
+      })
+      .catch(() => null);
+
+    res.status(200).json({
+      success: true,
+      message: "User signed out successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

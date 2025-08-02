@@ -41,7 +41,7 @@ model User {
 
 model RefreshToken {
   id        String   @id @default(uuid()) @db.Uuid
-  token     String // hashed refresh token
+  token     String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String   @db.Uuid
   expiresAt DateTime
