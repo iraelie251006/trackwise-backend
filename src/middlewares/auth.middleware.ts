@@ -20,7 +20,7 @@ export const authorize = async (req: Request, res: Response, next: NextFunction)
 
         const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
 
-        if (typeof decoded === 'string' || !decoded.userId) {
+        if (typeof decoded === 'string' || !decoded.sub) {
             return res.status(401).json({
                 success: false,
                 error: { message: "Invalid token format." },
@@ -29,7 +29,7 @@ export const authorize = async (req: Request, res: Response, next: NextFunction)
 
         const user = await prisma.user.findUnique({
             where: {
-                id: decoded.userId,
+                id: decoded.sub,
             }
         });
 

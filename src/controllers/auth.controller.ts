@@ -5,7 +5,6 @@ import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 
-
 export const SignIn = async (
   req: Request,
   res: Response,
@@ -62,9 +61,13 @@ export const SignIn = async (
           );
         }
 
-        const accessToken = jwt.sign({ userId: user.id }, ACCESS_TOKEN_SECRET, {
-          expiresIn: ACCESS_TOKEN_EXPIRES,
-        });
+        const accessToken = jwt.sign(
+          { sub: user.id, email: user.email, tokenType: "access" },
+          ACCESS_TOKEN_SECRET,
+          {
+            expiresIn: ACCESS_TOKEN_EXPIRES,
+          }
+        );
 
         return {
           accessToken,
@@ -167,7 +170,7 @@ export const SignUp = async (
         }
 
         const accessToken = jwt.sign(
-          { userId: newUser.id },
+          { sub: newUser.id, email: newUser.email, tokenType: "access" },
           ACCESS_TOKEN_SECRET,
           { expiresIn: ACCESS_TOKEN_EXPIRES }
         );
