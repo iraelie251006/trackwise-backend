@@ -11,9 +11,27 @@ export const authorize = async (req: Request, res: Response, next: NextFunction)
             token = req.headers.authorization.split(" ")[1];
         };
 
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: { message: "Access token is required." },
+            });
+        };
+
         const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
 
-        const user = await prisma.user.findUnique(decoded.userId);
+        if (typeof decoded === 'string' || !decoded.userId) {
+            return res.status(401).json({
+                success: false,
+                error: { message: "Invalid token format." },
+            });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: {
+                id: decoded.userId,
+            }
+        });
 
         if (!user) {
             return res.status(401).json({
@@ -23,7 +41,7 @@ export const authorize = async (req: Request, res: Response, next: NextFunction)
         };
 
         req.user = user;
-        
+
         next();
     } catch (error) {
         next(error)
