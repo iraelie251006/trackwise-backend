@@ -1,7 +1,12 @@
 import { prisma } from "../utils/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { ACCESS_TOKEN_EXPIRES, ACCESS_TOKEN_SECRET } from "../config/env";
+import {
+  ACCESS_TOKEN_EXPIRES,
+  ACCESS_TOKEN_SECRET,
+  REFRESH_TOKEN_EXPIRES,
+  REFRESH_TOKEN_SECRET,
+} from "../config/env";
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 
@@ -70,6 +75,14 @@ export const SignIn = async (
           }
         );
 
+        const refreshToken = jwt.sign(
+          { sub: user.id, email: user.email, tokenType: "refresh" },
+          REFRESH_TOKEN_SECRET,
+          {
+            expiresIn: REFRESH_TOKEN_EXPIRES,
+            algorithm: "HS256",
+          }
+        );
         return {
           accessToken,
           user,
