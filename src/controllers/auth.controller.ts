@@ -9,6 +9,7 @@ import {
 } from "../config/env";
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
+import dayjs from "dayjs";
 
 export const SignIn = async (
   req: Request,
@@ -83,6 +84,22 @@ export const SignIn = async (
             algorithm: "HS256",
           }
         );
+        // store refresh token in the database
+        await tx.refreshToken.create({
+          data: {
+            token: refreshToken,
+            userId: user.id,
+            expiresAt: dayjs().add(REFRESH_TOKEN_EXPIRES, "second").toDate(),
+          },
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: REFRESH_TOKEN_EXPIRES * 1000,
+        });
+
         return {
           accessToken,
           user,
@@ -188,6 +205,31 @@ export const SignUp = async (
           ACCESS_TOKEN_SECRET,
           { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
         );
+
+        const refreshToken = jwt.sign(
+          { sub: user.id, email: user.email, tokenType: "refresh" },
+          REFRESH_TOKEN_SECRET,
+          {
+            expiresIn: REFRESH_TOKEN_EXPIRES,
+            algorithm: "HS256",
+          }
+        );
+
+        // store refresh token in the database
+        await tx.refreshToken.create({
+          data: {
+            token: refreshToken,
+            userId: user.id,
+            expiresAt: dayjs().add(REFRESH_TOKEN_EXPIRES, "second").toDate(),
+          },
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: REFRESH_TOKEN_EXPIRES * 1000,
+        });
 
         return { accessToken, user: newUser };
       }
