@@ -66,6 +66,7 @@ export const SignIn = async (
           ACCESS_TOKEN_SECRET,
           {
             expiresIn: ACCESS_TOKEN_EXPIRES,
+            algorithm: "HS256",
           }
         );
 
@@ -172,7 +173,7 @@ export const SignUp = async (
         const accessToken = jwt.sign(
           { sub: newUser.id, email: newUser.email, tokenType: "access" },
           ACCESS_TOKEN_SECRET,
-          { expiresIn: ACCESS_TOKEN_EXPIRES }
+          { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
         );
 
         return { accessToken, user: newUser };
