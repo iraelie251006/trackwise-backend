@@ -98,7 +98,7 @@ export const SignIn = async (
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
           maxAge: REFRESH_TOKEN_EXPIRES * 1000,
-          path: "/api/auth"
+          path: "/api/auth",
         });
 
         return {
@@ -230,7 +230,7 @@ export const SignUp = async (
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
           maxAge: REFRESH_TOKEN_EXPIRES * 1000,
-          path: "/api/auth"
+          path: "/api/auth",
         });
 
         return { accessToken, user: newUser };
@@ -273,7 +273,7 @@ export const SignOut = async (
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      path: "/api/auth"
+      path: "/api/auth",
     });
     await prisma.refreshToken
       .delete({
@@ -292,14 +292,18 @@ export const SignOut = async (
   }
 };
 
-export const SignOutEverywhere = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const SignOutEverywhere = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const refreshToken = req.cookies.refreshToken;
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    path: "/api/auth"
+    path: "/api/auth",
   });
 
   if (!refreshToken) {
@@ -308,21 +312,21 @@ export const SignOutEverywhere = async (req: Request, res: Response, next: NextF
       message: "User signed out from all devices successfully.",
     });
     return;
-  };
+  }
 
   const tokenRecord = await prisma.refreshToken.findFirst({
-    where: {token: refreshToken},
+    where: { token: refreshToken },
     select: { userId: true },
   });
 
   if (tokenRecord) {
     await prisma.refreshToken.deleteMany({
-      where: {userId: tokenRecord.userId},
-    })
-  };
+      where: { userId: tokenRecord.userId },
+    });
+  }
 
   res.status(200).json({
     success: true,
     message: "User signed out from all devices successfully.",
   });
-}
+};
