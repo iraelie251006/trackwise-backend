@@ -381,10 +381,11 @@ export const refresh = async (
       { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
     );
 
-    // Token rotation
+    const tokenRecordId = tokenRecord?.user?.id as string;
 
-    const { newRefreshToken, newRefreshTokenExpires } =
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const { newRefreshToken } = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // Token rotation
         const newRefreshToken = crypto.randomBytes(64).toString("base64");
         const newRefreshTokenExpires = dayjs()
           .add(REFRESH_TOKEN_EXPIRES, "day")
@@ -399,12 +400,13 @@ export const refresh = async (
         await tx.refreshToken.create({
           data: {
             token: newRefreshToken,
-            userId: tokenRecord.user.id,
+            userId: tokenRecordId,
             expiresAt: newRefreshTokenExpires,
           },
         });
-        return { newRefreshToken, newRefreshTokenExpires };
-      });
+        return { newRefreshToken };
+      }
+    );
 
     res.cookie("refresh", newRefreshToken, {
       httpOnly: true,
