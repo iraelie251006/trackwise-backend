@@ -98,6 +98,7 @@ export const SignIn = async (
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
           maxAge: REFRESH_TOKEN_EXPIRES * 1000,
+          path: "/api/auth"
         });
 
         return {
@@ -229,6 +230,7 @@ export const SignUp = async (
           secure: process.env.NODE_ENV === "production",
           sameSite: "strict",
           maxAge: REFRESH_TOKEN_EXPIRES * 1000,
+          path: "/api/auth"
         });
 
         return { accessToken, user: newUser };
@@ -271,6 +273,7 @@ export const SignOut = async (
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/api/auth"
     });
     await prisma.refreshToken
       .delete({
@@ -296,6 +299,7 @@ export const SignOutEverywhere = async (req: Request, res: Response, next: NextF
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+    path: "/api/auth"
   });
 
   if (!refreshToken) {

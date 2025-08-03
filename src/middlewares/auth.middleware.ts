@@ -25,7 +25,9 @@ export const authorize = async (
       });
     }
 
-    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET, { algorithms: ["HS256"] });
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET, {
+      algorithms: ["HS256"],
+    });
 
     if (typeof decoded === "string" || !decoded.sub) {
       return res.status(401).json({
