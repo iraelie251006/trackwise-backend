@@ -332,77 +332,97 @@ export const SignOutEverywhere = async (
   });
 };
 
-export const refresh = async (req: Request, res: Response, next: NextFunction) => {
-  const refreshToken = req.cookies.refreshToken;
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
 
-  if (!refreshToken) {
-    return res.status(401).json({
-      success: false,
-      error: { message: "Refresh token is required." },
-    });
-  };
+    if (!refreshToken) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Refresh token is required." },
+      });
+    }
 
-  const tokenRecord = await prisma.refreshToken.findFirst({
-    where: {
-      token: refreshToken,
-      expiresAt: {
-        gt: dayjs().format('YYYY-MM-DD HH:mm:ss') // Ensure the token is not expired
-      }
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          email: true,
+    const tokenRecord = await prisma.refreshToken.findFirst({
+      where: {
+        token: refreshToken,
+        expiresAt: {
+          gt: dayjs().format("YYYY-MM-DD HH:mm:ss"), // Ensure the token is not expired
         },
       },
-    },
-  });
-
-  if (!tokenRecord) {
-    return res.status(401).json({
-      success: false,
-      error: { message: "Invalid or expired refresh token." },
-    });
-  };
-
-  const newAccessToken = jwt.sign({sub: tokenRecord?.user?.id, email: tokenRecord?.user?.email, tokenType: "access"}, ACCESS_TOKEN_SECRET, {expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256"});
-
-  // Token rotation
-  const newRefreshToken = crypto.randomBytes(64).toString('base64');
-  const newRefreshTokenExpires = dayjs().add(REFRESH_TOKEN_EXPIRES, 'day').toDate();
-
-  await prisma.$transaction(async(tx: Prisma.TransactionClient) => {
-    // Delete the old refresh token
-    await tx.refreshToken.deleteMany({
-      where: {
-        token: refreshToken
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
       },
     });
-    // Create a new refresh token
-    await tx.refreshToken.create({
-      data: {
-        token: newRefreshToken,
-        userId: tokenRecord?.user?.id,
-        expiresAt: newRefreshTokenExpires,
-      }
-    });
-  });
-  
-  res.cookie("refresh", newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: REFRESH_TOKEN_EXPIRES * 1000,
-    path: "/api/auth",
-  });
 
-  res.status(200).json({
-    success: true,
-    message: "Tokens refreshed successfully.",
-    data: {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-    },
-  })
-}
+    if (!tokenRecord) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Invalid or expired refresh token." },
+      });
+    }
+
+    const newAccessToken = jwt.sign(
+      {
+        sub: tokenRecord?.user?.id,
+        email: tokenRecord?.user?.email,
+        tokenType: "access",
+      },
+      ACCESS_TOKEN_SECRET,
+      { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
+    );
+
+    // Token rotation
+
+    const { newRefreshToken, newRefreshTokenExpires } =
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        const newRefreshToken = crypto.randomBytes(64).toString("base64");
+        const newRefreshTokenExpires = dayjs()
+          .add(REFRESH_TOKEN_EXPIRES, "day")
+          .toDate();
+        // Delete the old refresh token
+        await tx.refreshToken.deleteMany({
+          where: {
+            token: refreshToken,
+          },
+        });
+        // Create a new refresh token
+        await tx.refreshToken.create({
+          data: {
+            token: newRefreshToken,
+            userId: tokenRecord.user.id,
+            expiresAt: newRefreshTokenExpires,
+          },
+        });
+        return { newRefreshToken, newRefreshTokenExpires };
+      });
+
+    res.cookie("refresh", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: REFRESH_TOKEN_EXPIRES * 1000,
+      path: "/api/auth",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Tokens refreshed successfully.",
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
