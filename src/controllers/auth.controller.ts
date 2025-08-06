@@ -414,7 +414,7 @@ export const refresh = async (
       }
     );
 
-    res.cookie("refresh", newRefreshToken, {
+    res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
