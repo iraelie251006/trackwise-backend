@@ -387,14 +387,20 @@ export const refresh = async (
       { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
     );
 
-    const tokenRecordId = tokenRecord?.user?.id as string;
-
     const { newRefreshToken } = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         // Token rotation
-        const newRefreshToken = crypto.randomBytes(64).toString("base64");
+        const newRefreshToken = jwt.sign(
+          {
+            sub: tokenRecord.user.id,
+            email: tokenRecord.user.email,
+            tokenType: "refresh",
+          },
+          REFRESH_TOKEN_SECRET,
+          { expiresIn: REFRESH_TOKEN_EXPIRES, algorithm: "HS256" }
+        );
         const newRefreshTokenExpires = dayjs()
-          .add(REFRESH_TOKEN_EXPIRES, "day")
+          .add(REFRESH_TOKEN_EXPIRES, "second")
           .toDate();
         // Delete the old refresh token
         await tx.refreshToken.deleteMany({
@@ -406,7 +412,7 @@ export const refresh = async (
         await tx.refreshToken.create({
           data: {
             token: newRefreshToken,
-            userId: tokenRecordId,
+            userId: tokenRecord.user.id,
             expiresAt: newRefreshTokenExpires,
           },
         });
