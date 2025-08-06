@@ -298,38 +298,42 @@ export const SignOutEverywhere = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const refreshToken = req.cookies.refreshToken;
+  try {
+    const refreshToken = req.cookies.refreshToken;
 
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/api/auth",
-  });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/auth",
+    });
 
-  if (!refreshToken) {
+    if (!refreshToken) {
+      res.status(200).json({
+        success: true,
+        message: "User signed out from all devices successfully.",
+      });
+      return;
+    }
+
+    const tokenRecord = await prisma.refreshToken.findFirst({
+      where: { token: refreshToken },
+      select: { userId: true },
+    });
+
+    if (tokenRecord) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: tokenRecord.userId },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "User signed out from all devices successfully.",
     });
-    return;
+  } catch (error) {
+    next(error);
   }
-
-  const tokenRecord = await prisma.refreshToken.findFirst({
-    where: { token: refreshToken },
-    select: { userId: true },
-  });
-
-  if (tokenRecord) {
-    await prisma.refreshToken.deleteMany({
-      where: { userId: tokenRecord.userId },
-    });
-  }
-
-  res.status(200).json({
-    success: true,
-    message: "User signed out from all devices successfully.",
-  });
 };
 
 export const refresh = async (
