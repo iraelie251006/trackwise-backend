@@ -209,7 +209,7 @@ export const SignUp = async (
         );
 
         const refreshToken = jwt.sign(
-          { sub: user.id, email: user.email, tokenType: "refresh" },
+          { sub: newUser.id, email: newUser.email, tokenType: "refresh" },
           REFRESH_TOKEN_SECRET,
           {
             expiresIn: REFRESH_TOKEN_EXPIRES,
@@ -221,7 +221,7 @@ export const SignUp = async (
         await tx.refreshToken.create({
           data: {
             token: refreshToken,
-            userId: user.id,
+            userId: newUser.id,
             expiresAt: dayjs().add(REFRESH_TOKEN_EXPIRES, "second").toDate(),
           },
         });
