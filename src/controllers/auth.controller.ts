@@ -41,6 +41,13 @@ export const SignIn = async (
           where: {
             email,
           },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            username: true,
+            password: true,
+          },
         });
 
         if (!user) throw new Error("USER_NOT_FOUND");
@@ -180,7 +187,18 @@ export const SignUp = async (
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = await tx.user.create({
-          data: { name, email, username, password: hashedPassword },
+          data: {
+            name,
+            email,
+            username,
+            password: hashedPassword,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            username: true,
+          },
         });
 
         if (
