@@ -349,6 +349,7 @@ export const refresh = async (
         success: false,
         error: { message: "Refresh token is required." },
       });
+      return;
     }
 
     const tokenRecord = await prisma.refreshToken.findFirst({
@@ -373,6 +374,7 @@ export const refresh = async (
         success: false,
         error: { message: "Invalid or expired refresh token." },
       });
+      return;
     }
 
     const newAccessToken = jwt.sign(
