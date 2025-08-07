@@ -1,12 +1,12 @@
 export interface ValidationError {
   field: string;
   message: string;
-}
+};
 
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
-}
+};
 
 // Email validation
 export const validateEmail = (email: string): ValidationResult => {
@@ -15,7 +15,7 @@ export const validateEmail = (email: string): ValidationResult => {
   if (!email || email.trim() === "") {
     errors.push({ field: "email", message: "Email is required." });
     return { isValid: false, errors };
-  }
+  };
 
   // RFC 5322 compliant email regex (simplified but robust)
   const emailRegex =
@@ -26,11 +26,11 @@ export const validateEmail = (email: string): ValidationResult => {
       field: "email",
       message: "Please provide a valid email address.",
     });
-  }
+  };
 
   if (email.length > 254) {
     errors.push({ field: "email", message: "Email address is too long." });
-  }
+  };
 
   return { isValid: errors.length === 0, errors };
 };
