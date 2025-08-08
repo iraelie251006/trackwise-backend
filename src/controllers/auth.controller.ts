@@ -10,7 +10,7 @@ import {
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 import dayjs from "dayjs";
-import { validateSignInInput } from "../utils/authValidation";
+import { validateSignInInput, validateSignUpInput } from "../utils/authValidation";
 
 export const SignIn = async (
   req: Request,
@@ -27,7 +27,7 @@ export const SignIn = async (
         success: false,
         error: {
           message: "Sign In Validation failed.",
-          details: validationResult.errors
+          details: validationResult.errors,
         },
       });
       return;
@@ -154,38 +154,42 @@ export const SignUp = async (
 ): Promise<void> => {
   try {
     const { name, username, email, password } = req.body;
-    const requiredFields: Record<string, string> = {
-      email,
-      password,
+
+    const validationResult = validateSignUpInput({
       name,
       username,
-    };
-    const missingFields = Object.keys(requiredFields).filter(
-      (key) => !requiredFields[key]
-    );
+      email,
+      password,
+    });
 
-    if (missingFields.length > 0) {
+    if (!validationResult.isValid) {
       res.status(400).json({
         success: false,
         error: {
-          message: `${missingFields.length === 1 ? `${missingFields} is required` : `${missingFields.join(", ")} are required`}.`,
+          message: "Sign Up Validation failed.",
+          details: validationResult.errors,
         },
       });
       return;
-    }
+    };
+
+    // Sanitized inputs
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedUsername = username.trim().toLowerCase();
+    const sanitizedName = name.trim();
 
     const { accessToken, user } = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const existingUser = await tx.user.findUnique({
           where: {
-            email,
+            email: sanitizedEmail,
           },
         });
         if (existingUser) throw new Error("USER_ALREADY_EXISTS");
 
         const existingUsername = await tx.user.findUnique({
           where: {
-            username,
+            username: sanitizedUsername,
           },
         });
 
@@ -196,9 +200,9 @@ export const SignUp = async (
 
         const newUser = await tx.user.create({
           data: {
-            name,
-            email,
-            username,
+            name: sanitizedName,
+            email: sanitizedEmail,
+            username: sanitizedUsername,
             password: hashedPassword,
           },
           select: {
