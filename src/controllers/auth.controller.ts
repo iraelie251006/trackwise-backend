@@ -10,6 +10,7 @@ import {
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 import dayjs from "dayjs";
+import { validateSignInInput } from "../utils/authValidation";
 
 export const SignIn = async (
   req: Request,
@@ -19,27 +20,26 @@ export const SignIn = async (
   try {
     const { email, password } = req.body;
 
-    if (!email) {
+    const validationResult = validateSignInInput({ email, password });
+
+    if (!validationResult.isValid) {
       res.status(400).json({
         success: false,
-        error: { message: "Email is required." },
+        error: {
+          message: "Sign In Validation failed.",
+          details: validationResult.errors
+        },
       });
       return;
     }
 
-    if (!password) {
-      res.status(400).json({
-        success: false,
-        error: { message: "Password is required." },
-      });
-      return;
-    }
+    const sanitizedEmail = email.trim().toLowerCase();
 
     const { accessToken, user } = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const user = await tx.user.findUnique({
           where: {
-            email,
+            email: sanitizedEmail,
           },
           select: {
             id: true,
@@ -108,9 +108,17 @@ export const SignIn = async (
           path: "/api/auth",
         });
 
+        // Return user without password
+        const userResponse = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+        };
+
         return {
           accessToken,
-          user,
+          user: userResponse,
         };
       }
     );
