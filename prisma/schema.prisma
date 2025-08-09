@@ -14,27 +14,32 @@ enum Role {
   ADMIN
 }
 
-enum AuthProvider {
-  CREDENTIALS
-  GOOGLE
-  GITHUB
+enum Category {
+  FOOD
+  TRANSPORT
+  UTILITIES
+  ENTERTAINMENT
+  HEALTH
+  EDUCATION
+  SAVINGS
+  OTHER
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  name          String         @db.VarChar(100)
-  username      String         @unique @db.VarChar(50)
-  email         String         @unique @db.VarChar(255)
-  password      String // hashed password
-  provider      AuthProvider   @default(CREDENTIALS)
-  refreshTokens RefreshToken[] // one-to-many relationship
+  id            String          @id @default(uuid()) @db.Uuid
+  name          String          @db.VarChar(100)
+  username      String          @unique @db.VarChar(50)
+  email         String          @unique @db.VarChar(255)
+  password      String
+  provider      SocialAccount[]
+  refreshTokens RefreshToken[]
   alert         Alert[]
-  image         String?        @db.VarChar(255)
-  role          Role           @default(USER)
+  image         String?         @db.VarChar(255)
+  role          Role            @default(USER)
   expenses      Expense[]
-  timezone      String         @default("UTC")
-  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+  timezone      String          @default("UTC")
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(6)
 
   @@map("users") // Map to "users" table in the database
 }
@@ -57,7 +62,7 @@ model Expense {
   amount      Decimal  @db.Decimal(10, 2)
   date        DateTime
   category    Category
-  userId      String @db.Uuid
+  userId      String   @db.Uuid
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isRecurring Boolean  @default(false)
   notes       String?
@@ -68,20 +73,35 @@ model Expense {
 model Alert {
   id        String   @id @default(uuid()) @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String @db.Uuid
+  userId    String   @db.Uuid
   threshold Float // e.g. 5000 RWF/month
   triggered Boolean  @default(false)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
-enum Category {
-  FOOD
-  TRANSPORT
-  UTILITIES
-  ENTERTAINMENT
-  HEALTH
-  EDUCATION
-  SAVINGS
-  OTHER
+model SocialAccount {
+  id         String   @id @default(cuid())
+  userId     String
+  provider   String
+  providerId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+
+  // Ensure one account per provider per user
+  @@unique([userId, provider])
+  // Ensure one provider account per provider ID
+  @@unique([provider, providerId])
+  @@map("social_accounts")
+}
+
+model OAuthState {
+  id        String   @id @default(cuid())
+  state     String   @unique
+  provider  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("oauth_states")
 }
