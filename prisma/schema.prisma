@@ -31,7 +31,7 @@ model User {
   username      String          @unique @db.VarChar(50)
   email         String          @unique @db.VarChar(255)
   password      String
-  provider      SocialAccount[]
+  provider      Account[]
   refreshTokens RefreshToken[]
   alert         Alert[]
   image         String?         @db.VarChar(255)
@@ -80,7 +80,7 @@ model Alert {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
-model SocialAccount {
+model Account {
   id         String   @id @default(cuid())
   userId     String
   provider   String
@@ -93,7 +93,7 @@ model SocialAccount {
   @@unique([userId, provider])
   // Ensure one provider account per provider ID
   @@unique([provider, providerId])
-  @@map("social_accounts")
+  @@map("account")
 }
 
 model OAuthState {
