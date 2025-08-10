@@ -13,37 +13,14 @@ export enum SocialProvider {
   GOOGLE = 'google',
 }
 
-export interface SocialProfile {
+export interface GoogleProfile {
   id: string;
   email: string;
   name: string;
-  username?: string;
-  avatar?: string;
-  provider: SocialProvider;
-  providerId: string;
+  picture?: string;
 }
 
-export interface SocialAuthConfig {
-  google: {
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  }
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
 }
-
-export interface OAuthTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in?: number;
-  refresh_token?: string;
-  scope?: string;
-}
-
-// config/socialAuth.ts
-export const socialAuthConfig: SocialAuthConfig = {
-  google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback',
-  }
-};
