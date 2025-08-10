@@ -84,7 +84,7 @@ model Account {
   id         String   @id @default(cuid())
   userId     String
   provider   String
-  providerId String
+  providerAccountId String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime @updatedAt @db.Timestamptz(6)
@@ -92,7 +92,7 @@ model Account {
   // Ensure one account per provider per user
   @@unique([userId, provider])
   // Ensure one provider account per provider ID
-  @@unique([provider, providerId])
+  @@unique([provider, providerAccountId])
   @@map("account")
 }
 

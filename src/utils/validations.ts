@@ -22,6 +22,11 @@ export const envSchema = z.object({
     }
     return parsed;
   }),
+  AUTH_GOOGLE_ID: z.string().min(1, { message: "AUTH_GOOGLE_ID is required" }),
+  AUTH_GOOGLE_SECRET: z
+    .string()
+    .min(1, { message: "AUTH_GOOGLE_SECRET is required" }),
+  AUTH_SECRET: z.string().min(1, { message: "AUTH_SECRET is required" }),
 });
 
 export const SignUpSchema = z.object({

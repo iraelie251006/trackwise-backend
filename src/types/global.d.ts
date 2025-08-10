@@ -11,7 +11,6 @@ declare global {
   // types/socialAuth.ts
 export enum SocialProvider {
   GOOGLE = 'google',
-  GITHUB = 'github'
 }
 
 export interface SocialProfile {
@@ -29,12 +28,7 @@ export interface SocialAuthConfig {
     clientId: string;
     clientSecret: string;
     redirectUri: string;
-  };
-  github: {
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  };
+  }
 }
 
 export interface OAuthTokenResponse {
@@ -51,10 +45,5 @@ export const socialAuthConfig: SocialAuthConfig = {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback',
-  },
-  github: {
-    clientId: process.env.GITHUB_CLIENT_ID || '',
-    clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-    redirectUri: process.env.GITHUB_REDIRECT_URI || 'http://localhost:3000/api/auth/github/callback',
-  },
+  }
 };
