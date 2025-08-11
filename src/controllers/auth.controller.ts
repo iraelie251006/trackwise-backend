@@ -10,7 +10,11 @@ import {
 import { Prisma } from "../generated/prisma";
 import { NextFunction, Request, Response } from "express";
 import dayjs from "dayjs";
-import { validateSignInInput, validateSignUpInput } from "../utils/authValidation";
+import {
+  validateSignInInput,
+  validateSignUpInput,
+} from "../utils/authValidation";
+import { JWTService } from "../utils/jwt";
 
 export const SignIn = async (
   req: Request,
@@ -74,23 +78,11 @@ export const SignIn = async (
           );
         }
 
-        const accessToken = jwt.sign(
-          { sub: user.id, email: user.email, tokenType: "access" },
-          ACCESS_TOKEN_SECRET,
-          {
-            expiresIn: ACCESS_TOKEN_EXPIRES,
-            algorithm: "HS256",
-          }
-        );
+        const { accessToken, refreshToken } = JWTService.generateTokens({
+          sub: user.id,
+          email: user.email,
+        });
 
-        const refreshToken = jwt.sign(
-          { sub: user.id, email: user.email, tokenType: "refresh" },
-          REFRESH_TOKEN_SECRET,
-          {
-            expiresIn: REFRESH_TOKEN_EXPIRES,
-            algorithm: "HS256",
-          }
-        );
         // store refresh token in the database
         await tx.refreshToken.create({
           data: {
@@ -171,7 +163,7 @@ export const SignUp = async (
         },
       });
       return;
-    };
+    }
 
     // Sanitized inputs
     const sanitizedEmail = email.trim().toLowerCase();
@@ -231,20 +223,10 @@ export const SignUp = async (
           );
         }
 
-        const accessToken = jwt.sign(
-          { sub: newUser.id, email: newUser.email, tokenType: "access" },
-          ACCESS_TOKEN_SECRET,
-          { expiresIn: ACCESS_TOKEN_EXPIRES, algorithm: "HS256" }
-        );
-
-        const refreshToken = jwt.sign(
-          { sub: newUser.id, email: newUser.email, tokenType: "refresh" },
-          REFRESH_TOKEN_SECRET,
-          {
-            expiresIn: REFRESH_TOKEN_EXPIRES,
-            algorithm: "HS256",
-          }
-        );
+        const { accessToken, refreshToken } = JWTService.generateTokens({
+          sub: newUser.id,
+          email: newUser.email,
+        });
 
         // store refresh token in the database
         await tx.refreshToken.create({
