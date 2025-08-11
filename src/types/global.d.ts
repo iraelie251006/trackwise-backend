@@ -24,3 +24,66 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+
+export interface JWTPayload {
+  sub: string;
+  email: string;
+  username: string;
+  role?: string;
+  iat?: number;
+  exp?: number;
+}
+
+export interface ExtendedUser {
+  id: string;
+  email: string;
+  name: string;
+  image?: string;
+  username: string;
+  role: string;
+  timezone: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ExtendedToken {
+  userId?: string;
+  email?: string;
+  username?: string;
+  role?: string;
+  name?: string;
+  image?: string;
+  timezone?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  accessToken?: string;
+  refreshToken?: string;
+  iat?: number;
+  exp?: number;
+}
+
+export interface ExtendedSession {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    image?: string;
+    username: string;
+    role: string;
+    timezone: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  accessToken: string;
+  refreshToken: string;
+  tokenIssuedAt?: Date;
+  tokenExpiresAt?: Date;
+  expires: string;
+}
+
+// Auth.js module augmentation for TypeScript
+declare module '@auth/express' {
+  interface Session extends ExtendedSession {}
+  interface User extends ExtendedUser {}
+  interface JWT extends ExtendedToken {}
+}
